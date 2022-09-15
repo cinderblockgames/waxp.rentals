@@ -13,6 +13,7 @@ namespace WaxRentals.Data.Context
 
         // welcome
         public DbSet<WelcomePackage> WelcomePackages { get; set; }
+        public DbSet<WelcomePackageWithKeys> WelcomePackagesWithKeys { get; set; }
 
         // tracking
         public DbSet<WaxHistory> WaxHistory { get; set; }

@@ -94,6 +94,9 @@
     <Build Include="dbo\Views\Rentals.sql" />
     <Build Include="welcome\Views\Packages.sql" />
     <Build Include="logs\Stored Procedures\ClearOlderRecords.sql" />
+    <Build Include="welcome\Tables\PackageWithKeys.sql" />
+    <Build Include="welcome\Views\PackagesWithKeys.sql" />
+    <Build Include="welcome\Tables\AddressWithKeys.sql" />
   </ItemGroup>
   <ItemGroup>
     <PostDeploy Include="Scripts\PostDeploy.sql" />

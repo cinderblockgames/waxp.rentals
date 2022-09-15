@@ -134,6 +134,40 @@ namespace WaxRentals.Data.Manager
             });
         }
 
+        public async Task<int> OpenWelcomePackageWithKeys(string account, string ownerPublicKey, string activePublicKey, int ram, decimal banano)
+        {
+            return await ProcessWithFactory(async context =>
+            {
+                // Prevent spamming of the same unpaid package info.
+                var existing = context.WelcomePackagesWithKeys.SingleOrDefault(package =>
+                    package.WaxAccount == account &&
+                    package.OwnerPublicKey == ownerPublicKey &&
+                    package.ActivePublicKey == activePublicKey &&
+                    package.Inserted > Abandoned);
+                if (existing != null)
+                {
+                    existing.Ram = ram;
+                    existing.Banano = banano;
+                    await context.SaveChangesAsync();
+                    return existing.PackageId;
+                }
+
+                var package = context.WelcomePackagesWithKeys.Add(
+                    new WelcomePackageWithKeys
+                    {
+                        WaxAccount = account,
+                        OwnerPublicKey = ownerPublicKey,
+                        ActivePublicKey = activePublicKey,
+                        Ram = ram,
+                        Banano = banano,
+                        Status = Status.New
+                    }
+                );
+                await context.SaveChangesAsync();
+                return package.Entity.PackageId;
+            });
+        }
+
         #endregion
 
         #region " IProcess "
@@ -398,6 +432,132 @@ namespace WaxRentals.Data.Manager
 
         #endregion
 
+        #region " Welcome Packages with Keys "
+
+        public async Task<IEnumerable<WelcomePackageWithKeys>> PullNewWelcomePackagesWithKeys()
+        {
+            return await ProcessWithFactory(async context =>
+            {
+                // If the package hasn't been funded within 24 hours, assume it's abandoned.
+                // If it needs to be reactivated, change the Inserted date in the database.
+                // But probably, the user will just make a new one.
+                return await (from package in context.WelcomePackagesWithKeys
+                              where package.StatusId == (int)Status.New && package.Inserted > Abandoned
+                              select package).ToArrayAsync();
+            });
+        }
+
+        public async Task ProcessWelcomePackageWithKeysPayment(int packageId)
+        {
+            await ProcessWithFactory(async context =>
+            {
+                var package = context.WelcomePackagesWithKeys.SingleOrDefault(
+                    package => package.PackageId == packageId && package.StatusId == (int)Status.New);
+                if (package != null)
+                {
+                    package.Paid = DateTime.UtcNow;
+                    package.Status = Status.Pending;
+                    await context.SaveChangesAsync();
+                }
+            });
+        }
+
+        public async Task<IEnumerable<WelcomePackageWithKeys>> PullPaidWelcomePackagesWithKeysToFund()
+        {
+            return await ProcessWithFactory(async context =>
+            {
+                return await (from package in context.WelcomePackagesWithKeys
+                              where package.StatusId == (int)Status.Pending && package.FundTransaction == null
+                              select package).ToArrayAsync();
+            });
+        }
+
+        public async Task ProcessWelcomePackageWithKeysFunding(int packageId, string fundTransaction)
+        {
+            await ProcessWithFactory(async context =>
+            {
+                var package = context.WelcomePackagesWithKeys.SingleOrDefault(
+                    package => package.PackageId == packageId && package.StatusId == (int)Status.Pending);
+                if (package != null)
+                {
+                    package.FundTransaction = fundTransaction;
+                    package.Status = Status.Processed;
+                    await context.SaveChangesAsync();
+                }
+            });
+        }
+
+        public async Task<IEnumerable<WelcomePackageWithKeys>> PullFundedWelcomePackagesWithKeysMissingNft()
+        {
+            return await ProcessWithFactory(async context =>
+            {
+                return await (from package in context.WelcomePackagesWithKeys
+                              where package.StatusId == (int)Status.Processed && package.NftTransaction == null
+                              select package).ToArrayAsync();
+            });
+        }
+
+        public async Task ProcessWelcomePackageWithKeysNft(int packageId, string nftTransaction)
+        {
+            await ProcessWithFactory(async context =>
+            {
+                var package = context.WelcomePackagesWithKeys.SingleOrDefault(
+                    package => package.PackageId == packageId && package.StatusId == (int)Status.Processed);
+                if (package != null)
+                {
+                    package.NftTransaction = nftTransaction;
+                    await context.SaveChangesAsync();
+                }
+            });
+        }
+
+        public async Task<IEnumerable<WelcomePackageWithKeys>> PullFundedWelcomePackagesWithKeysMissingRental()
+        {
+            return await ProcessWithFactory(async context =>
+            {
+                return await (from package in context.WelcomePackagesWithKeys
+                              where package.StatusId == (int)Status.Processed && package.RentalId == null
+                              select package).ToArrayAsync();
+            });
+        }
+
+        public async Task ProcessWelcomePackageWithKeysRental(int packageId, int rentalId)
+        {
+            await ProcessWithFactory(async context =>
+            {
+                var package = context.WelcomePackagesWithKeys.SingleOrDefault(
+                    package => package.PackageId == packageId && package.StatusId == (int)Status.Processed);
+                if (package != null)
+                {
+                    package.RentalId = rentalId;
+                    await context.SaveChangesAsync();
+                }
+            });
+        }
+
+        public async Task<IEnumerable<WelcomePackageWithKeys>> PullSweepableWelcomePackagesWithKeys()
+        {
+            return await ProcessWithFactory(async context =>
+            {
+                return await (from package in context.WelcomePackagesWithKeys
+                              where package.StatusId == (int)Status.Processed && package.SweepBananoTransaction == null
+                              select package).ToArrayAsync();
+            });
+        }
+
+        public async Task ProcessWelcomePackageWithKeysSweep(int packageId, string transaction)
+        {
+            await ProcessWithFactory(async context =>
+            {
+                var package = context.WelcomePackagesWithKeys.SingleOrDefault(
+                    package => package.PackageId == packageId && package.StatusId == (int)Status.Processed);
+                package.SweepBananoTransaction = transaction;
+                await context.SaveChangesAsync();
+            });
+        }
+
+        #endregion
+
         #endregion
 
         #region " ITrackWax "
@@ -457,6 +617,7 @@ namespace WaxRentals.Data.Manager
 
         public async Task Message(Guid requestId, string url, MessageDirection direction, string message)
         {
+            return; // Until I figure out why ClearOlderLogs isn't running, don't store Messages.
             await ProcessWithFactory(async context =>
             {
                 try
@@ -599,6 +760,30 @@ namespace WaxRentals.Data.Manager
             {
                 return await context.WelcomePackages
                                     .Where(package => package.Memo == memo &&
+                                                      (package.StatusId != (int)Status.New || package.Inserted > Abandoned))
+                                    .OrderBy(package => package.Paid)
+                                    .ThenBy(package => package.PackageId)
+                                    .ToArrayAsync();
+            });
+        }
+
+        public async Task<IEnumerable<WelcomePackageWithKeys>> GetWelcomePackagesWithKeysByBananoAddresses(IEnumerable<string> addresses)
+        {
+            return await ProcessWithFactory(async context =>
+            {
+                return await (from package in context.WelcomePackagesWithKeys
+                              where addresses.Contains(package.BananoAddress) && (package.StatusId != (int)Status.New || package.Inserted > Abandoned)
+                              orderby package.PackageId
+                              select package).ToArrayAsync();
+            });
+        }
+
+        public async Task<IEnumerable<WelcomePackageWithKeys>> GetWelcomePackagesWithKeysByWaxAccount(string account)
+        {
+            return await ProcessWithFactory(async context =>
+            {
+                return await context.WelcomePackagesWithKeys
+                                    .Where(package => package.WaxAccount == account &&
                                                       (package.StatusId != (int)Status.New || package.Inserted > Abandoned))
                                     .OrderBy(package => package.Paid)
                                     .ThenBy(package => package.PackageId)

@@ -43,5 +43,22 @@ namespace WaxRentals.Data.Manager
         Task<IEnumerable<WelcomePackage>> PullSweepableWelcomePackages();
         Task ProcessWelcomePackageSweep(int packageId, string transaction);
 
+        // Welcome Packages With Keys
+
+        Task<IEnumerable<WelcomePackageWithKeys>> PullNewWelcomePackagesWithKeys();
+        Task ProcessWelcomePackageWithKeysPayment(int packageId);
+
+        Task<IEnumerable<WelcomePackageWithKeys>> PullPaidWelcomePackagesWithKeysToFund();
+        Task ProcessWelcomePackageWithKeysFunding(int packageId, string fundTransaction);
+
+        Task<IEnumerable<WelcomePackageWithKeys>> PullFundedWelcomePackagesWithKeysMissingNft();
+        Task ProcessWelcomePackageWithKeysNft(int packageId, string nftTransaction);
+
+        Task<IEnumerable<WelcomePackageWithKeys>> PullFundedWelcomePackagesWithKeysMissingRental();
+        Task ProcessWelcomePackageWithKeysRental(int packageId, int rentalId);
+
+        Task<IEnumerable<WelcomePackageWithKeys>> PullSweepableWelcomePackagesWithKeys();
+        Task ProcessWelcomePackageWithKeysSweep(int packageId, string transaction);
+
     }
 }

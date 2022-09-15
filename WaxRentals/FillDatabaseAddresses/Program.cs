@@ -11,10 +11,11 @@ namespace FillDatabaseAddresses
             var targets = new
             {
                 Addresses = new { Table = "Address", Seed = args[1] },
-                WelcomeAddresses = new { Table = "welcome.Address", Seed = args[2] }
+                WelcomeAddresses = new { Table = "welcome.Address", Seed = args[2] },
+                KeysAddresses = new { Table = "welcome.AddressWithKeys", Seed = args[3] }
             };
 
-            var target = targets.WelcomeAddresses;
+            var target = targets.KeysAddresses;
 
             using (var connection = new SqlConnection(args[0]))
             {
@@ -23,7 +24,7 @@ namespace FillDatabaseAddresses
                 uint max = 0;
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = $"SELECT MAX(AddressId) FROM {target.Table}";
+                    command.CommandText = $"SELECT MAX(AddressWithKeysId) FROM {target.Table}";
                     var result = command.ExecuteScalar();
                     if (!(result is DBNull))
                     {
@@ -31,11 +32,11 @@ namespace FillDatabaseAddresses
                     }
                 }
 
-                for (uint outer = 0; outer < 1000; outer++)
+                for (uint outer = 0; outer < 100; outer++)
                 {
                     using (var command = connection.CreateCommand())
                     {
-                        command.CommandText = $"INSERT INTO {target.Table} (AddressId, Address) VALUES ";
+                        command.CommandText = $"INSERT INTO {target.Table} (AddressWithKeysId, Address) VALUES ";
                         for (uint inner = 1; inner <= 1000; inner++)
                         {
                             var id = max + (1000 * outer) + inner;

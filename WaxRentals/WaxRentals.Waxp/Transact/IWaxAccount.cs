@@ -13,6 +13,7 @@ namespace WaxRentals.Waxp.Transact
         Task<(bool Success, string)> ClaimRefund();
         Task<(bool Success, string)> Send(string account, decimal wax, string memo = null);
         Task<(bool Success, string)> SendAsset(string account, string asset, string memo);
+        Task<(bool Success, string)> CreateAccount(string account, string ownerPublicKey, string activePublicKey, int ram);
 
     }
 }

@@ -8,7 +8,7 @@ namespace VanityAddressGenerator
     {
         static void Main()
         {
-            var vanity = "ads";
+            var vanity = "keys";
             var filename = $"{vanity}.seed.txt";
 
             var sw = new Stopwatch();

@@ -183,6 +183,59 @@ namespace WaxRentals.Waxp.Transact
             );
         }
 
+        public async Task<(bool, string)> CreateAccount(string account, string ownerPublicKey, string activePublicKey, int ram/*, decimal cpu, decimal net*/)
+        {
+            return await Process(
+                new NewAccountAction
+                {
+                    Authorization = _authorization,
+                    Data = new NewAccountData
+                    {
+                        Creator = new Name(Account),
+                        Name = new Name(account),
+                        Owner = new Authority
+                        {
+                            Keys = new List<AuthorityKey>
+                            {
+                                new AuthorityKey { Key = new PublicKey(ownerPublicKey), Weight = 1 }
+                            },
+                            Threshold = 1
+                        },
+                        Active = new Authority
+                        {
+                            Keys = new List<AuthorityKey>
+                            {
+                                new AuthorityKey { Key = new PublicKey(activePublicKey), Weight = 1 }
+                            },
+                            Threshold = 1
+                        }
+                    }
+                },
+                new BuyRamAction
+                {
+                    Authorization = _authorization,
+                    Data = new BuyRamData
+                    {
+                        Bytes = ram,
+                        Payer = new Name(Account),
+                        Receiver = new Name(account)
+                    }
+                }/*,
+                new StakeAction
+                {
+                    Authorization = _authorization,
+                    Data = new StakeData
+                    {
+                        Cpu = new LongCurrency($"{cpu} WAX"),
+                        Net = new LongCurrency($"{net} WAX"),
+                        From = new Name(Account),
+                        Receiver = new Name(account),
+                        Transfer = true
+                    }
+                }*/
+            );
+        }
+
         #endregion
 
         #region " Not Used "
@@ -200,59 +253,6 @@ namespace WaxRentals.Waxp.Transact
                         Receiver = new Name(account)
                     }
                 }
-            );
-        }
-
-        public async Task<(bool, string)> CreateAccount(string account, int ram, decimal cpu, decimal net)
-        {
-            return await Process(
-                new NewAccountAction
-                {
-                    Authorization = _authorization,
-                    Data = new NewAccountData
-                    {
-                        Creator = new Name(Account),
-                        Name = new Name(account),
-                        Owner = new Authority
-                        {
-                            Keys = new List<AuthorityKey>
-                            {
-                                new AuthorityKey { Key = new PublicKey("EOS8U61Z9FkfdY4xGxZNLijnKCMtN4TLxdUQ2vLzdv95r2KofQo2j"), Weight = 1 }
-                            },
-                            Threshold = 1
-                        },
-                        Active = new Authority
-                        {
-                            Keys = new List<AuthorityKey>
-                            {
-                                new AuthorityKey { Key = new PublicKey("EOS8mXEzdgHHdbmt4qFvFJv7T1ZHFQCSNVcQC7BwHJMK5TK6qCWqz"), Weight = 1 }
-                            },
-                            Threshold = 1
-                        }
-                    }
-                },
-                new BuyRamAction
-                {
-                    Authorization = _authorization,
-                    Data = new BuyRamData
-                    {
-                        Bytes = ram,
-                        Payer = new Name(Account),
-                        Receiver = new Name(account)
-                    }
-                },
-                 new StakeAction
-                 {
-                     Authorization = _authorization,
-                     Data = new StakeData
-                     {
-                         Cpu = new LongCurrency($"{cpu} WAX"),
-                         Net = new LongCurrency($"{net} WAX"),
-                         From = new Name(Account),
-                         Receiver = new Name(account),
-                         Transfer = true
-                     }
-                 }
             );
         }
 
