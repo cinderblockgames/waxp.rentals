@@ -253,12 +253,12 @@ namespace WaxRentals.Data.Manager
             });
         }
 
-        public async Task<Rental> PullNextClosingRental()
+        public async Task<Rental> PullNextClosingRental(string source)
         {
             return await ProcessWithFactory(context =>
             {
                 var rental = context.Rentals.FirstOrDefault(rental =>
-                    rental.StatusId == (int)Status.Processed && rental.PaidThrough < DateTime.UtcNow);
+                    rental.StatusId == (int)Status.Processed && rental.PaidThrough < DateTime.UtcNow && rental.SourceWaxAccount == source);
                 return Task.FromResult(rental);
             });
         }
@@ -643,7 +643,7 @@ namespace WaxRentals.Data.Manager
         public async Task ClearOlderRecords()
         {
             await ProcessWithFactory(async context =>
-                await context.Database.ExecuteSqlRawAsync("[dbo].[ClearOlderRecords]")
+                await context.Database.ExecuteSqlRawAsync("[logs].[ClearOlderRecords]")
             );
         }
 
@@ -799,22 +799,20 @@ namespace WaxRentals.Data.Manager
         {
             return await ProcessWithFactory(async context =>
             {
-                if (days % 4 == 0)
+                var rental = context.Rentals.SingleOrDefault(rental =>
+                    rental.BananoAddress == address && rental.StatusId == (int)Status.Processed);
+                if (rental != null)
                 {
-                    var rental = context.Rentals.SingleOrDefault(rental => rental.BananoAddress == address && rental.PaidThrough > DateTime.UtcNow);
-                    if (rental != null)
+                    var through = rental.PaidThrough.Value.AddDays(days);
+                    if (through < DateTime.UtcNow)
                     {
-                        var through = rental.PaidThrough.Value.AddDays(days);
-                        if (through < DateTime.UtcNow.AddDays(4))
-                        {
-                            return await ExpireRental(address);
-                        }
-                        else
-                        {
-                            rental.RentalDays += days;
-                            await context.SaveChangesAsync();
-                            return rental;
-                        }
+                        return await ExpireRental(address);
+                    }
+                    else
+                    {
+                        rental.RentalDays += days;
+                        await context.SaveChangesAsync();
+                        return rental;
                     }
                 }
                 return null;
@@ -825,17 +823,14 @@ namespace WaxRentals.Data.Manager
         {
             return await ProcessWithFactory(async context =>
             {
-                var rental = context.Rentals.SingleOrDefault(rental => rental.BananoAddress == address && rental.PaidThrough > DateTime.UtcNow);
+                var rental = context.Rentals.SingleOrDefault(rental =>
+                    rental.BananoAddress == address && rental.StatusId == (int)Status.Processed);
                 if (rental != null)
                 {
-                    var daysAway = (int)(rental.PaidThrough.Value - DateTime.UtcNow).TotalDays;
-                    if (daysAway >= 4)
-                    {
-                        var subtract = daysAway - (daysAway % 4);
-                        rental.RentalDays -= subtract;
-                        await context.SaveChangesAsync();
-                        return rental;
-                    }
+                    // Set to expire now, but it won't be picked up to unstake until the source day comes again.
+                    rental.RentalDays = (int)(DateTime.UtcNow - rental.Paid.Value).TotalDays;
+                    await context.SaveChangesAsync();
+                    return rental;
                 }
                 return null;
             });

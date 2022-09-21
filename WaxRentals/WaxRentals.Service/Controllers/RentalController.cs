@@ -5,6 +5,7 @@ using WaxRentals.Service.Caching;
 using WaxRentals.Service.Config;
 using WaxRentals.Service.Shared.Entities;
 using WaxRentals.Service.Shared.Entities.Input;
+using WaxRentals.Waxp.Transact;
 using static WaxRentals.Service.Shared.Config.Constants;
 using Status = WaxRentals.Data.Entities.Status;
 
@@ -20,6 +21,7 @@ namespace WaxRentals.Service.Controllers
 
         private Cache Cache { get; }
 
+        private IWaxAccounts Wax { get; }
         private IBananoAccountFactory Banano { get; }
         private Mapper Mapper { get; }
 
@@ -32,6 +34,7 @@ namespace WaxRentals.Service.Controllers
             
             Cache cache,
             
+            IWaxAccounts wax,
             IBananoAccountFactory banano,
             Mapper mapper)
             : base(log)
@@ -43,6 +46,7 @@ namespace WaxRentals.Service.Controllers
 
             Cache = cache;
 
+            Wax = wax;
             Banano = banano;
             Mapper = mapper;
         }
@@ -155,7 +159,8 @@ namespace WaxRentals.Service.Controllers
         [HttpGet("NextClosing")]
         public async Task<JsonResult> NextClosing()
         {
-            var rental = await Process.PullNextClosingRental();
+            // Only unstake rentals that are staked by today's account.
+            var rental = await Process.PullNextClosingRental(Wax.Today.Account);
             return Succeed(Mapper.Map(rental));
         }
 

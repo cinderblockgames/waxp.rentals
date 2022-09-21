@@ -18,7 +18,7 @@ namespace WaxRentals.Data.Manager
         Task<IEnumerable<Rental>> PullSweepableRentals();
         Task ProcessRentalSweep(int rentalId, string transaction);
 
-        Task<Rental> PullNextClosingRental();
+        Task<Rental> PullNextClosingRental(string source);
         Task ProcessRentalClosing(int rentalId, string transaction);
 
         // Purchases

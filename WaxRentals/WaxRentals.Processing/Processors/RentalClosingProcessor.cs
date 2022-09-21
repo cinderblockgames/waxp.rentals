@@ -31,10 +31,17 @@ namespace WaxRentals.Processing.Processors
 
         private async Task Process(RentalInfo rental)
         {
-            var result = await Wax.Unstake(rental.Cpu, rental.Net, rental.WaxAccount, rental.SourceAccount);
-            if (result.Success)
+            try
             {
-                await Rentals.ProcessClosing(rental.Id, result.Value);
+                var result = await Wax.Unstake(rental.Cpu, rental.Net, rental.WaxAccount, rental.SourceAccount);
+                if (result.Success)
+                {
+                    await Rentals.ProcessClosing(rental.Id, result.Value);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log(ex, context: rental);
             }
         }
 
