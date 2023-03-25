@@ -31,7 +31,8 @@ namespace WaxRentals.Data.Config
             services.AddSingleton<ILog, DataManager>();
             services.AddSingleton<IManage, DataManager>();
             services.AddSingleton<IProcess, DataManager>();
-            services.AddSingleton<ITrackWax, DataManager>();
+            //services.AddSingleton<ITrackWax, DataManager>();
+            services.AddSingleton<ITrackWax, TrackWaxManager>();
         }
 
         private static IDictionary<string, string> GetEnvironmentVariables()

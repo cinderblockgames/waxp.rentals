@@ -23,27 +23,27 @@ namespace WaxRentals.Service.Controllers
         [HttpPost("Error")]
         public async Task<JsonResult> Error([FromBody] ErrorLog log)
         {
-            await Log.Error(log.Exception, log.Error, log.Context);
+            //await Log.Error(log.Exception, log.Error, log.Context);
             return Succeed();
         }
 
         [HttpPost("Message")]
         public async Task<JsonResult> Message([FromBody] MessageLog log)
         {
-            var direction = log.Direction switch
-            {
-                MessageLogDirection.In  => MessageDirection.In,
-                MessageLogDirection.Out => MessageDirection.Out,
-                _ => throw new ArgumentOutOfRangeException(nameof(log.Direction), log.Direction, "Unsupported value.")
-            };
-            await Log.Message(log.RequestId, log.Url, direction, log.Message);
+            //var direction = log.Direction switch
+            //{
+            //    MessageLogDirection.In  => MessageDirection.In,
+            //    MessageLogDirection.Out => MessageDirection.Out,
+            //    _ => throw new ArgumentOutOfRangeException(nameof(log.Direction), log.Direction, "Unsupported value.")
+            //};
+            //await Log.Message(log.RequestId, log.Url, direction, log.Message);
             return Succeed();
         }
 
         [HttpPost("ClearOlderRecords")]
         public async Task<JsonResult> ClearOlderRecords()
         {
-            await Log.ClearOlderRecords();
+            //await Log.ClearOlderRecords();
             return Succeed();
         }
 
